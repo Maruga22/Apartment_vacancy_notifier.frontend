@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/auth.css";
 
 export default function Signup() {
@@ -13,10 +13,14 @@ export default function Signup() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || "/";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -25,9 +29,9 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -41,16 +45,34 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      // TODO: Connect to backend authentication
-      console.log("Signup attempt:", formData);
+      const response = await fetch(
+        "http://127.0.0.1:5000/api/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password,
+          }),
+        }
+      );
 
-      // Simulate successful signup
-      setTimeout(() => {
-        navigate("/login");
-        setLoading(false);
-      }, 500);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      alert("Registration successful!");
+
+      navigate("/login", { state: { from } });
     } catch (err) {
-      setError("Error creating account. Please try again.");
+      setError(err.message || "Something went wrong.");
+    } finally {
       setLoading(false);
     }
   };
@@ -58,7 +80,6 @@ export default function Signup() {
   return (
     <div className="auth-container signup-container">
       <div className="auth-background">
-        {/* Background with logo and photo */}
         <div className="bg-overlay"></div>
         <div className="bg-pattern">
           <div className="logo-bg">🏠</div>
@@ -74,86 +95,69 @@ export default function Signup() {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="name">Full Name</label>
+              <label>Full Name</label>
               <input
                 type="text"
-                id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="John Doe"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Email Address</label>
+              <label>Email</label>
               <input
                 type="email"
-                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="your@email.com"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone">Phone Number</label>
+              <label>Phone</label>
               <input
-                type="tel"
-                id="phone"
+                type="text"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+1 (555) 000-0000"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 required
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            {error && <div className="error-message">{error}</div>}
+            {error && <p className="error-message">{error}</p>}
 
-            <button type="submit" className="btn-submit" disabled={loading}>
+            <button type="submit" disabled={loading}>
               {loading ? "Creating Account..." : "Register"}
             </button>
           </form>
 
           <div className="auth-footer">
-            <p>
-              Already have an account?{" "}
-              <Link to="/login" className="link">
-                Log in
-              </Link>
-            </p>
+            Already have an account?{" "}
+            <Link to="/login">Login</Link>
           </div>
         </div>
       </div>

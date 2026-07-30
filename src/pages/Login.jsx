@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 import "../styles/auth.css";
 
 export default function Login() {
@@ -8,6 +9,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const from = location.state?.from || "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,12 +21,12 @@ export default function Login() {
     try {
       // TODO: Connect to backend authentication
       console.log("Login attempt:", { email, password });
-      
-      // Simulate successful login
+
+      await login(email, password);
       setTimeout(() => {
-        navigate("/");
+        navigate(from, { replace: true });
         setLoading(false);
-      }, 500);
+      }, 300);
     } catch (err) {
       setError("Invalid email or password");
       setLoading(false);
@@ -87,7 +91,7 @@ export default function Login() {
           <div className="auth-footer">
             <p>
               Don't have an account?{" "}
-              <Link to="/signup" className="link">
+              <Link to="/signup" className="link" state={{ from }}>
                 Sign up
               </Link>
             </p>
