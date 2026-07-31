@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../AuthContext";
 import "../styles/search.css";
 
 export default function Search() {
   const [search, setSearch] = useState("");
   const [apartments, setApartments] = useState([]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/api/apartments/")
@@ -13,7 +17,49 @@ export default function Search() {
       .then((data) => setApartments(data))
       .catch((err) => console.error(err));
   }, []);
+  const handleDelete = async (id) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this apartment?"
+  );
 
+  if (!confirmDelete) return;
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:5000/api/apartments/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    setApartments(
+      apartments.filter((apartment) => apartment.id !== id)
+    );
+
+    alert("Apartment deleted successfully.");
+
+  } catch (err) {
+    alert(err.message);
+  }
+  };
+
+
+  const handleEdit = (apartment) => {
+
+  navigate("/post", {
+    state: {
+      apartment,
+      editing: true,
+    },
+  });
+
+  };
   const filteredApartments = apartments.filter((apartment) =>
     apartment.location.toLowerCase().includes(search.toLowerCase())
   );
@@ -60,24 +106,55 @@ export default function Search() {
                   <h2>{apartment.title}</h2>
 
                   <p className="location">
-                    📍 {apartment.location}
+                  📍 {apartment.location}
                   </p>
 
-                  <h3>
-                    KES {Number(apartment.price).toLocaleString()}/month
-                  </h3>
+                 <h3>
+                  KES {Number(apartment.price).toLocaleString()}
+                 </h3>
 
-                  <p>
-                    🛏 {apartment.bedrooms} Bedrooms
-                  </p>
+                 <p>
+                  🛏 {apartment.bedrooms} Bedrooms
+                 </p>
 
-                  <p>
-                    🚿 {apartment.bathrooms} Bathrooms
-                  </p>
+                 <p>
+                  🚿 {apartment.bathrooms} Bathrooms
+                 </p>
 
-                  <p>{apartment.description}</p>
+                 <p>{apartment.description}</p>
+
+                 <div className="card-buttons">
+
+                    <button
+                      className="view-btn"
+                    >
+                      View Details
+                    </button>
+
+                    {user && apartment.user_id === user.id && (
+
+                      <>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(apartment)}
+                    >
+                      ✏ Edit
+                    </button>
+
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(apartment.id)}
+                    >
+                      🗑 Delete
+                    </button>
+
+                    </>
+
+                  )}
 
                 </div>
+
+              </div>
 
               </div>
             ))
