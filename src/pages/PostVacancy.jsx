@@ -6,16 +6,22 @@ import Footer from "../components/Footer";
 import "../styles/notification-form.css";
 
 export default function PostVacancy() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     title: "",
     address: "",
     rent: "",
     bedrooms: "1",
+    bathrooms: "1",
     description: "",
   });
+
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -24,27 +30,81 @@ export default function PostVacancy() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
+  const handleImage = (e) => {
+    const file = e.target.files[0];
 
-    if (!formData.title || !formData.address || !formData.rent || !formData.description) {
-      setError("Please fill in all required fields before saving.");
-      return;
-    }
+    if (!file) return;
+
+    setImage(file);
+
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    setSaved(false);
+
+    try {
+      const body = new FormData();
+
+      body.append("title", formData.title);
+      body.append("location", formData.address);
+      body.append("price", formData.rent);
+      body.append("bedrooms", formData.bedrooms);
+      body.append("bathrooms", formData.bathrooms);
+      body.append("description", formData.description);
+
+      if (image) {
+        body.append("image", image);
+      }
+
+      const response = await fetch(
+        "http://127.0.0.1:5000/api/apartments/",
+        {
+          method: "POST",
+          body,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to post apartment.");
+      }
+
       setSaved(true);
-      setFormData({ title: "", address: "", rent: "", bedrooms: "1", description: "" });
-    }, 600);
+
+      alert("Vacancy Posted Successfully!");
+
+      setFormData({
+        title: "",
+        address: "",
+        rent: "",
+        bedrooms: "1",
+        bathrooms: "1",
+        description: "",
+      });
+
+      setImage(null);
+      setPreview("");
+
+      navigate("/search");
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -55,15 +115,31 @@ export default function PostVacancy() {
         <main className="browse-page">
           <section className="browse-header">
             <h1>Sign in to post a vacancy</h1>
+
             <p>
-              You must be logged in before you can submit a vacancy listing.
-              Please sign in or create an account to continue.
+              You must be logged in before posting a property.
             </p>
+
             <div className="auth-redirect-buttons">
-              <button className="btn btn-primary" onClick={() => navigate("/login", { state: { from: redirectFrom } })}>
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  navigate("/login", {
+                    state: { from: redirectFrom },
+                  })
+                }
+              >
                 Log In
               </button>
-              <button className="btn btn-secondary" onClick={() => navigate("/signup", { state: { from: redirectFrom } })}>
+
+              <button
+                className="btn btn-secondary"
+                onClick={() =>
+                  navigate("/signup", {
+                    state: { from: redirectFrom },
+                  })
+                }
+              >
                 Sign Up
               </button>
             </div>
@@ -80,93 +156,164 @@ export default function PostVacancy() {
       <Navbar />
 
       <main className="browse-page">
+
         <section className="browse-header">
-          <h1>Post a Vacancy</h1>
-          <p>Save your apartment vacancy details and notify interested users.</p>
+          <h1>Post Apartment Vacancy</h1>
+
+          <p>
+            Fill in the details below to advertise your apartment.
+          </p>
         </section>
 
         <section className="notification-form-container">
-          <form onSubmit={handleSubmit} className="notification-form">
-            <h2>Vacancy Details</h2>
+
+          <form
+            className="notification-form"
+            onSubmit={handleSubmit}
+          >
+
+            <h2>Apartment Details</h2>
 
             <div className="form-group">
-              <label htmlFor="title">Listing Title</label>
+              <label>Listing Title</label>
+
               <input
-                id="title"
+                type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g. Spacious 2BR near the park"
+                placeholder="Modern 2 Bedroom Apartment"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="address">Address</label>
+              <label>Location</label>
+
               <input
-                id="address"
+                type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="Street address or neighborhood"
+                placeholder="Westlands, Nairobi"
                 required
               />
             </div>
 
             <div className="form-row">
+
               <div className="form-group">
-                <label htmlFor="rent">Rent ($/month)</label>
+                <label>Rent (KES)</label>
+
                 <input
-                  id="rent"
-                  name="rent"
                   type="number"
+                  name="rent"
                   value={formData.rent}
                   onChange={handleChange}
-                  placeholder="1800"
+                  placeholder="25000"
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="bedrooms">Bedrooms</label>
-                <select id="bedrooms" name="bedrooms" value={formData.bedrooms} onChange={handleChange}>
+                <label>Bedrooms</label>
+
+                <select
+                  name="bedrooms"
+                  value={formData.bedrooms}
+                  onChange={handleChange}
+                >
                   <option value="1">1 Bedroom</option>
                   <option value="2">2 Bedrooms</option>
                   <option value="3">3 Bedrooms</option>
-                  <option value="4">4+ Bedrooms</option>
+                  <option value="4">4 Bedrooms</option>
+                  <option value="5">Studio</option>
                 </select>
               </div>
+
+            </div>
+
+            <div className="form-row">
+
+              <div className="form-group">
+                <label>Bathrooms</label>
+
+                <select
+                  name="bathrooms"
+                  value={formData.bathrooms}
+                  onChange={handleChange}
+                >
+                  <option value="1">1 Bathroom</option>
+                  <option value="2">2 Bathrooms</option>
+                  <option value="3">3 Bathrooms</option>
+                  <option value="4">4 Bathrooms</option>
+                </select>
+                            </div>
+
             </div>
 
             <div className="form-group">
-              <label htmlFor="description">Description</label>
+              <label>Description</label>
+
               <textarea
-                id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Share details like amenities, parking, or move-in date."
                 rows="5"
+                placeholder="Describe the apartment, nearby amenities, parking, security, WiFi, water availability, etc."
                 required
               />
             </div>
 
-            {error && <div className="error-message">{error}</div>}
+            <div className="form-group">
+              <label>Apartment Image</label>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Saving..." : "Save Vacancy"}
-            </button>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImage}
+              />
+            </div>
 
-            {saved && (
-              <div className="alert alert-success">
-                ✓ Saved successfully. Your vacancy is now ready to share.
+            {preview && (
+              <div className="image-preview">
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="preview-image"
+                />
               </div>
             )}
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+            {saved && (
+              <div className="success-message">
+                Apartment posted successfully!
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={loading}
+            >
+              {loading ? "Posting..." : "Post Apartment"}
+            </button>
+
           </form>
+
         </section>
+
       </main>
 
       <Footer />
+
     </div>
   );
 }
+             
