@@ -1,6 +1,6 @@
 /* Navbar Styling */
 .navbar {
-  background: linear-gradient(135deg, #ea9266 0%, #a2644b 100%);
+  background: linear-gradient(135deg,#ea9266  0%, #a2644b 100%);
   padding: 1rem 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: sticky;
