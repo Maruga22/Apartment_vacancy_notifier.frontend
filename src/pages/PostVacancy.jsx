@@ -63,7 +63,7 @@ export default function PostVacancy() {
       body.append("bedrooms", formData.bedrooms);
       body.append("bathrooms", formData.bathrooms);
       body.append("description", formData.description);
-
+      body.append("user_id", user.id);  
       if (image) {
         body.append("image", image);
       }
